@@ -5,15 +5,25 @@
   
 
   
-  <title>hyx_blog</title>
+  <title>StarCraft_Java | hyx_blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="hyx_blog">
-<meta property="og:url" content="http://yoursite.com/index.html">
+  <meta name="description" content="写这篇文章的时候，同时也是我正式工作第一年的纪念日，在工作的第一年里，慢慢熟悉了工作的流程，公司的规矩和一个重新认识自己的态度。如果给我第一年的工作成果打分的话，我愿意打75分给我自己，有了新的态度，但是同样的还是很懒散，如果要有所成就的话，需要对自己有一定的约束。  StarCraft​    星际争霸是一个非常早，但是非常有趣的游戏，在我读大学时候，偶然翻到了某个牛人使用Java写的版本，一直">
+<meta property="og:type" content="article">
+<meta property="og:title" content="StarCraft_Java">
+<meta property="og:url" content="http://yoursite.com/2020/07/12/StarCraft-Java/index.html">
 <meta property="og:site_name" content="hyx_blog">
+<meta property="og:description" content="写这篇文章的时候，同时也是我正式工作第一年的纪念日，在工作的第一年里，慢慢熟悉了工作的流程，公司的规矩和一个重新认识自己的态度。如果给我第一年的工作成果打分的话，我愿意打75分给我自己，有了新的态度，但是同样的还是很懒散，如果要有所成就的话，需要对自己有一定的约束。  StarCraft​    星际争霸是一个非常早，但是非常有趣的游戏，在我读大学时候，偶然翻到了某个牛人使用Java写的版本，一直">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://yoursite.com/2020/07/12/StarCraft-Java/%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="http://yoursite.com/2020/07/12/StarCraft-Java/login.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/07/12/StarCraft-Java/util.png">
+<meta property="og:image" content="http://yoursite.com/2020/07/12/StarCraft-Java/NET.png">
+<meta property="article:published_time" content="2020-07-12T05:02:41.000Z">
+<meta property="article:modified_time" content="2020-07-12T05:02:41.610Z">
 <meta property="article:author" content="hyx">
+<meta property="article:tag" content="JavaSE">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/07/12/StarCraft-Java/%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84.png">
   
     <link rel="alternate" href="/atom.xml" title="hyx_blog" type="application/atom+xml">
   
@@ -62,9 +72,7 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-StarCraft-Java" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-StarCraft-Java" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2020/07/12/StarCraft-Java/" class="article-date">
   <time datetime="2020-07-12T05:02:41.000Z" itemprop="datePublished">2020-07-12</time>
@@ -77,8 +85,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/07/12/StarCraft-Java/">StarCraft_Java</a>
+    <h1 class="article-title" itemprop="name">
+      StarCraft_Java
     </h1>
   
 
@@ -220,159 +228,19 @@
     </footer>
   </div>
   
-</article>
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-SQLClient学习" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/" class="article-date">
-  <time datetime="2020-05-12T07:16:24.000Z" itemprop="datePublished">2020-05-12</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/">SQLClient学习</a>
-    </h1>
+    <a href="/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">SQLClient学习</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <hr>
-<p>SQLClient 位于Flink的Tablejar包内,通过调用tableAPI解析SQL，并将任务提交Flink集群。其中的好处在于无需编写复杂的Java或者Scala代码，通过SQL即可实现想要实现的功能，同时也可以做到无需生成Jar包即可提交任务，使得flink任务的配置和提交变得灵活多变，可以将其集成在别的应用中。</p>
-<h4 id="SQLClient的使用"><a href="#SQLClient的使用" class="headerlink" title="SQLClient的使用"></a>SQLClient的使用</h4><blockquote>
-<p>sqlclient.sh 位于 <strong>%flink%/bin</strong> 目录下 启动时候需要指定模式 <strong>embedded</strong> 或者 <strong>gateway</strong> 模式，在flink1.10中还不支持gateway模式。<br>使用embedded模式时候命令行命令为：    </p>
-<figure class="highlight plain"><figcaption><span>embedded ```  </span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">源码内对于 __embedded__ 模式和 __gateway__ 模式，在源码里有如下的说明：  </span><br><span class="line">&#123;% asset_img moshi.png %&#125;</span><br><span class="line"></span><br><span class="line">使用 __sqlclient__ 时候，需要指定参数，官方建议调试时候指定  </span><br><span class="line">&#96;&#96;&#96; embedded --defaults &#x2F;path&#x2F;to&#x2F;sql-client-defaults.yaml --jar &#x2F;path&#x2F;to&#x2F;target&#x2F;flink-sql-client-*.jar </span><br></pre></td></tr></table></figure>
-<p>输入命令: <code>./sqlclient.sh embedded --defaults /path/to/sql-client-defaults.yaml --jar /path/to/target/flink-sql-client-*.jar</code><br>如果一切正常，可以看到如下界面：  </p>
-<img src="/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/sqlclientview.png" class="">
-<p>接下来就可以正常编写SQL了！</p>
-</blockquote>
-<h4 id="SQLClient的原理"><a href="#SQLClient的原理" class="headerlink" title="SQLClient的原理"></a>SQLClient的原理</h4><blockquote>
-<p>在输入 <code>./sqlclient.sh</code> 后,其实调用的是 org.apache.flink.table.client包中的Sqlclient类中的main方法<br>main 方法内首先对于参数中的jar -j和lib -l 参数进行扫描，拿到Jar包和lib目录后，传给LocalExecutor后，启动localExecutor方法()  </p>
-<figure class="highlight plain"><figcaption><span>Executor executor </span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">LocalExecutor类是个什么东西呢？</span><br><span class="line">&gt;&gt;&#96;&#96;&#96; </span><br><span class="line">   &#x2F;&#x2F; deployment</span><br><span class="line"></span><br><span class="line">private final ClusterClientServiceLoader clusterClientServiceLoader;</span><br><span class="line">private final Environment defaultEnvironment;</span><br><span class="line">private final List&lt;URL&gt; dependencies;</span><br><span class="line">private final Configuration flinkConfig;</span><br><span class="line">private final List&lt;CustomCommandLine&gt; commandLines;</span><br><span class="line">private final Options commandLineOptions;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; result maintenance</span><br><span class="line"></span><br><span class="line">private final ResultStore resultStore; </span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>其中localexecutor 中持有的一些对象</p>
-</blockquote>
-</blockquote>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/" data-id="ckcim3huq0004s8rd4jclhgbd" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/flink-table-api/" rel="tag">flink,table-api</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-  
-    <article id="post-Graph学习" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/04/07/Graph%E5%AD%A6%E4%B9%A0/" class="article-date">
-  <time datetime="2020-04-07T11:45:59.000Z" itemprop="datePublished">2020-04-07</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/04/07/Graph%E5%AD%A6%E4%B9%A0/">Graph学习</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <hr>
-<p>Flink的Graph分为4层：<br>&nbsp;&nbsp;&nbsp;&nbsp;为：StreamGraph-&gt;JobGraph-&gt;ExecutionGraph-&gt;物理执行图</p>
-<ul>
-<li>StreamGraph:是根据用户通过 Stream API 编写的代码生成的最初的图。用来表示程序的拓扑结构。</li>
-</ul>
-<ul>
-<li><p>JobGraph：StreamGraph经过优化后生成了 JobGraph，提交给 JobManager 的数据结构。主要的优化为，将多个符合条件的节点 chain 在一起作为一个节点，这样可以减少数据在节点之间流动所需要的序列化/反序列化/传输消耗。</p>
-</li>
-<li><p>ExecutionGraph：JobManager 根据 JobGraph 生成ExecutionGraph。ExecutionGraph是JobGraph的并行化版本，是调度层最核心的数据结构。</p>
-</li>
-<li><p>物理执行图：JobManager 根据 ExecutionGraph 对 Job 进行调度后，在各个TaskManager 上部署 Task 后形成的“图”，并不是一个具体的数据结构。</p>
-</li>
-</ul>
-<img src="/2020/04/07/Graph%E5%AD%A6%E4%B9%A0/%E6%89%A7%E8%A1%8C%E5%9B%BE.png" class="">
-
-
-
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/04/07/Graph%E5%AD%A6%E4%B9%A0/" data-id="ckcim3hur0005s8rd7lr80ka5" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Flink/" rel="tag">Flink</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-初次使用" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2020/04/07/%E5%88%9D%E6%AC%A1%E4%BD%BF%E7%94%A8/" class="article-date">
-  <time datetime="2020-04-07T10:32:45.553Z" itemprop="datePublished">2020-04-07</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2020/04/07/%E5%88%9D%E6%AC%A1%E4%BD%BF%E7%94%A8/">初次使用</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>&nbsp;&nbsp;&nbsp;&nbsp;今天下午捣鼓了一下，终于用hexo搭建起来自己的blog。有一点点小激动，以后常常使用，多多总结。</p>
-<hr>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;个人很喜欢的一句话，来自贴吧的一位老哥，但是已经忘掉了后半句，只记得前半句:”灵台清明者…”，希望以后可以做一个这样的人，顺便将后半句话补全。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/04/07/%E5%88%9D%E6%AC%A1%E4%BD%BF%E7%94%A8/" data-id="ckcim3hup0003s8rd332wau16" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
 
 </section>
         
