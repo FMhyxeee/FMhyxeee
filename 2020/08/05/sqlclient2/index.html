@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>sqlclient2 | hyx_blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Flink SqlClient2 localExecutor 解读 localExecutor是sqlclient中直接与flink环境进行交互的类，包含了所有flink支持的DDL和DML类型操作的实现方法。 localExecutor只能在flink集群内启动，调用flink内部classloader  Executor接口解读  官方注释 : A gateway for communicat">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sqlclient2">
+<meta property="og:url" content="http://yoursite.com/2020/08/05/sqlclient2/index.html">
+<meta property="og:site_name" content="hyx_blog">
+<meta property="og:description" content="Flink SqlClient2 localExecutor 解读 localExecutor是sqlclient中直接与flink环境进行交互的类，包含了所有flink支持的DDL和DML类型操作的实现方法。 localExecutor只能在flink集群内启动，调用flink内部classloader  Executor接口解读  官方注释 : A gateway for communicat">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://yoursite.com/2020/08/05/sqlclient2/ExecutorStructor.png">
+<meta property="og:image" content="http://yoursite.com/2020/08/05/sqlclient2/help.png">
+<meta property="article:published_time" content="2020-08-05T12:16:05.000Z">
+<meta property="article:modified_time" content="2020-08-05T12:16:05.986Z">
+<meta property="article:author" content="hyx">
+<meta property="article:tag" content="flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/08/05/sqlclient2/ExecutorStructor.png">
+  
+    <link rel="alternate" href="/atom.xml" title="hyx_blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">hyx_blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-sqlclient2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/08/05/sqlclient2/" class="article-date">
+  <time datetime="2020-08-05T12:16:05.000Z" itemprop="datePublished">2020-08-05</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      sqlclient2
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="Flink-SqlClient2"><a href="#Flink-SqlClient2" class="headerlink" title="Flink SqlClient2"></a>Flink SqlClient2</h3><ul>
+<li><h4 id="localExecutor-解读"><a href="#localExecutor-解读" class="headerlink" title="localExecutor 解读"></a>localExecutor 解读</h4><p> localExecutor是sqlclient中直接与flink环境进行交互的类，包含了所有flink支持的DDL和DML类型操作的实现方法。</p>
+<p>localExecutor只能在flink集群内启动，调用flink内部classloader</p>
+<ul>
+<li><p>Executor接口解读</p>
+<p> 官方注释 : A gateway for communicating with Flink and other external systems.  </p>
+<img src="/2020/08/05/sqlclient2/ExecutorStructor.png" class="">
+
+<p>通过实现这些接口方法，可以做到对于表的增删改，和对表内数据的增删改查</p>
+</li>
+<li><p>LocalExecutor实现类</p>
+<p>localExecutor是调用本地的flink cluster，同时在Executor中持有多个不同session窗口，</p>
+<p>使用一个 ConcurrentHaspMap持有所有的session identifer</p>
+<p>同时持有如下的句柄：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">   <span class="comment">//deployment</span></span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> ClusterClientServiceLoader clusterClientServiceLoader;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> Environment defaultEnvironment;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> List&lt;URL&gt; dependencies;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> Configuration flinkConfig;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> List&lt;CustomCommandLine&gt; commandLines;</span><br><span class="line">   <span class="keyword">private</span> <span class="keyword">final</span> Options commandLineOptions;</span><br><span class="line">   <span class="comment">//result maintenance</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ResultStore resultStore;</span><br></pre></td></tr></table></figure>
+
+<p>在localExecutor中，实现了sqlclient中的基本方法：</p>
+<img src="/2020/08/05/sqlclient2/help.png" class="">
+
+<p>同时还有最重要的 executeQuery方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ResultDescriptor <span class="title">executeQuery</span><span class="params">(String sessionId, String query)</span> <span class="keyword">throws</span> SqlExecutionException </span>&#123;</span><br><span class="line">	<span class="keyword">final</span> ExecutionContext&lt;?&gt; context = getExecutionContext(sessionId);</span><br><span class="line">	<span class="keyword">return</span> executeQueryInternal(sessionId, context, query);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中 ExecutionContext的注解为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Context for executing table programs. This class caches everything that can be cached across</span><br><span class="line">multiple queries as long as the session context does not change. This must be thread-safe as</span><br><span class="line">it might be reused across different query submissions.</span><br></pre></td></tr></table></figure>
+
+<p>这个类为执行上下文，保存了一个ClusterID中的所有内容。</p>
+<p>首先看看Execution中的Builder私有类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Builder</span> </span>&#123;</span><br><span class="line">		<span class="comment">// Required members.</span></span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> SessionContext sessionContext;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> List&lt;URL&gt; dependencies;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> Configuration configuration;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> ClusterClientServiceLoader serviceLoader;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> Options commandLineOptions;</span><br><span class="line">		<span class="keyword">private</span> <span class="keyword">final</span> List&lt;CustomCommandLine&gt; commandLines;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">private</span> Environment defaultEnv;</span><br><span class="line">		<span class="keyword">private</span> Environment currentEnv;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Optional members.</span></span><br><span class="line">		<span class="meta">@Nullable</span></span><br><span class="line">		<span class="keyword">private</span> SessionState sessionState;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">private</span> <span class="title">Builder</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">				Environment defaultEnv,</span></span></span><br><span class="line"><span class="function"><span class="params">				@Nullable SessionContext sessionContext,</span></span></span><br><span class="line"><span class="function"><span class="params">				List&lt;URL&gt; dependencies,</span></span></span><br><span class="line"><span class="function"><span class="params">				Configuration configuration,</span></span></span><br><span class="line"><span class="function"><span class="params">				ClusterClientServiceLoader serviceLoader,</span></span></span><br><span class="line"><span class="function"><span class="params">				Options commandLineOptions,</span></span></span><br><span class="line"><span class="function"><span class="params">				List&lt;CustomCommandLine&gt; commandLines)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.defaultEnv = defaultEnv;</span><br><span class="line">	<span class="keyword">this</span>.sessionContext = sessionContext;</span><br><span class="line">			<span class="keyword">this</span>.dependencies = dependencies;</span><br><span class="line">	<span class="keyword">this</span>.configuration = configuration;</span><br><span class="line">			<span class="keyword">this</span>.serviceLoader = serviceLoader;</span><br><span class="line">	<span class="keyword">this</span>.commandLineOptions = commandLineOptions;</span><br><span class="line">			<span class="keyword">this</span>.commandLines = commandLines;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> Builder <span class="title">env</span><span class="params">(Environment environment)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.currentEnv = environment;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="function"><span class="keyword">public</span> Builder <span class="title">sessionState</span><span class="params">(SessionState sessionState)</span> </span>&#123;</span><br><span class="line">			<span class="keyword">this</span>.sessionState = sessionState;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">public</span> ExecutionContext&lt;?&gt; build() &#123;</span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> <span class="keyword">new</span> ExecutionContext&lt;&gt;(</span><br><span class="line">						<span class="keyword">this</span>.currentEnv == <span class="keyword">null</span></span><br><span class="line">								? Environment.merge(defaultEnv, sessionContext.getSessionEnv())</span><br><span class="line">								: <span class="keyword">this</span>.currentEnv,</span><br><span class="line">						<span class="keyword">this</span>.sessionContext,</span><br><span class="line">						<span class="keyword">this</span>.sessionState,</span><br><span class="line">						<span class="keyword">this</span>.dependencies,</span><br><span class="line">						<span class="keyword">this</span>.configuration,</span><br><span class="line">						<span class="keyword">this</span>.serviceLoader,</span><br><span class="line">						<span class="keyword">this</span>.commandLineOptions,</span><br><span class="line">						<span class="keyword">this</span>.commandLines);</span><br><span class="line">			&#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">				<span class="comment">// catch everything such that a configuration does not crash the executor</span></span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> SqlExecutionException(<span class="string">"Could not create execution context."</span>, t);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由这个类来生成ExecutionContext，其中builder需要的参数为：Environment、SessionContext、依赖jar包的List<URL>,配置文件Configuration，集群Server的ClassLoader，指令参数，指令列表。 由此返回一个ExecutionContext对象。</p>
+<p>在ExecutionContext的构造方法中，首先拿到了父类加载器classLoader</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">classloader = FlinkUserCodeClassLoaders.parentFirst(</span><br><span class="line">	dependencies.toArray(<span class="keyword">new</span> URL[dependencies.size()]),</span><br><span class="line">    <span class="keyword">this</span>.getClass.getClassLoader();</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>之后初始化TableEnviroment</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">initializeTableEnvironment</span><span class="params">(@Nullable SessionState sessionState)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">final</span> EnvironmentSettings settings = environment.getExecution().getEnvironmentSettings();</span><br><span class="line">		<span class="keyword">final</span> <span class="keyword">boolean</span> noInheritedState = sessionState == <span class="keyword">null</span>;</span><br><span class="line">		<span class="keyword">if</span> (noInheritedState) &#123;</span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// Step.1 Create environments</span></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// Step 1.0 Initialize the table configuration.</span></span><br><span class="line">			<span class="keyword">final</span> TableConfig config = <span class="keyword">new</span> TableConfig();</span><br><span class="line">			environment.getConfiguration().asMap().forEach((k, v) -&gt;</span><br><span class="line">					config.getConfiguration().setString(k, v));</span><br><span class="line">			<span class="comment">// Step 1.1 Initialize the CatalogManager if required.</span></span><br><span class="line">			<span class="keyword">final</span> CatalogManager catalogManager = <span class="keyword">new</span> CatalogManager(</span><br><span class="line">					settings.getBuiltInCatalogName(),</span><br><span class="line">					<span class="keyword">new</span> GenericInMemoryCatalog(</span><br><span class="line">							settings.getBuiltInCatalogName(),</span><br><span class="line">							settings.getBuiltInDatabaseName()));</span><br><span class="line">			<span class="comment">// Step 1.2 Initialize the ModuleManager if required.</span></span><br><span class="line">			<span class="keyword">final</span> ModuleManager moduleManager = <span class="keyword">new</span> ModuleManager();</span><br><span class="line">			<span class="comment">// Step 1.3 Initialize the FunctionCatalog if required.</span></span><br><span class="line">			<span class="keyword">final</span> FunctionCatalog functionCatalog = <span class="keyword">new</span> FunctionCatalog(config, catalogManager, moduleManager);</span><br><span class="line">			<span class="comment">// Step 1.4 Set up session state.</span></span><br><span class="line">			<span class="keyword">this</span>.sessionState = SessionState.of(config, catalogManager, moduleManager, functionCatalog);</span><br><span class="line"></span><br><span class="line">			<span class="comment">// Must initialize the table environment before actually the</span></span><br><span class="line">			createTableEnvironment(settings, config, catalogManager, moduleManager, functionCatalog);</span><br><span class="line"></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// Step.2 Create modules and load them into the TableEnvironment.</span></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// No need to register the modules info if already inherit from the same session.</span></span><br><span class="line">			Map&lt;String, Module&gt; modules = <span class="keyword">new</span> LinkedHashMap&lt;&gt;();</span><br><span class="line">			environment.getModules().forEach((name, entry) -&gt;</span><br><span class="line">					modules.put(name, createModule(entry.asMap(), classLoader))</span><br><span class="line">			);</span><br><span class="line">			<span class="keyword">if</span> (!modules.isEmpty()) &#123;</span><br><span class="line">				<span class="comment">// unload core module first to respect whatever users configure</span></span><br><span class="line">				tableEnv.unloadModule(CoreModuleDescriptorValidator.MODULE_TYPE_CORE);</span><br><span class="line">				modules.forEach(tableEnv::loadModule);</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// Step.3 create user-defined functions and temporal tables then register them.</span></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// No need to register the functions if already inherit from the same session.</span></span><br><span class="line">			registerFunctions();</span><br><span class="line"></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// Step.4 Create catalogs and register them.</span></span><br><span class="line">			<span class="comment">//--------------------------------------------------------------------------------------------------------------</span></span><br><span class="line">			<span class="comment">// No need to register the catalogs if already inherit from the same session.</span></span><br><span class="line">			initializeCatalogs();</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// Set up session state.</span></span><br><span class="line">			<span class="keyword">this</span>.sessionState = sessionState;</span><br><span class="line">			createTableEnvironment(</span><br><span class="line">					settings,</span><br><span class="line">					sessionState.config,</span><br><span class="line">					sessionState.catalogManager,</span><br><span class="line">					sessionState.moduleManager,</span><br><span class="line">					sessionState.functionCatalog);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>初始化一个 environment 其中：</p>
+<ol>
+<li>初始化TableConfig</li>
+<li>如果有catalog，则初始化catalog</li>
+<li>如果有module，则初始化module</li>
+<li>初始化自定义function </li>
+<li>建立一个session state</li>
+</ol>
+<p>初始化完成后，调用createTableEnvironment 方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">createTableEnvironment(settings, config, catalogManager, moduleManager, functionCatalog);</span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">createTableEnvironment</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">			EnvironmentSettings settings,</span></span></span><br><span class="line"><span class="function"><span class="params">			TableConfig config,</span></span></span><br><span class="line"><span class="function"><span class="params">			CatalogManager catalogManager,</span></span></span><br><span class="line"><span class="function"><span class="params">			ModuleManager moduleManager,</span></span></span><br><span class="line"><span class="function"><span class="params">			FunctionCatalog functionCatalog)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (environment.getExecution().isStreamingPlanner()) &#123;</span><br><span class="line">			streamExecEnv = createStreamExecutionEnvironment();</span><br><span class="line">			execEnv = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">final</span> Map&lt;String, String&gt; executorProperties = settings.toExecutorProperties();</span><br><span class="line">			executor = lookupExecutor(executorProperties, streamExecEnv);</span><br><span class="line">			tableEnv = createStreamTableEnvironment(</span><br><span class="line">					streamExecEnv,</span><br><span class="line">					settings,</span><br><span class="line">					config,</span><br><span class="line">					executor,</span><br><span class="line">					catalogManager,</span><br><span class="line">					moduleManager,</span><br><span class="line">					functionCatalog);</span><br><span class="line">		&#125; <span class="keyword">else</span> <span class="keyword">if</span> (environment.getExecution().isBatchPlanner()) &#123;</span><br><span class="line">			streamExecEnv = <span class="keyword">null</span>;</span><br><span class="line">			execEnv = createExecutionEnvironment();</span><br><span class="line">			executor = <span class="keyword">null</span>;</span><br><span class="line">			tableEnv = <span class="keyword">new</span> BatchTableEnvironmentImpl(</span><br><span class="line">					execEnv,</span><br><span class="line">					config,</span><br><span class="line">					catalogManager,</span><br><span class="line">					moduleManager);</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> SqlExecutionException(<span class="string">"Unsupported execution type specified."</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个方法中，首先判断了这个sql是流还是批，如果是流模式的话，则调用createStreamExecutionEnvironment() 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> StreamExecutionEnvironment <span class="title">createStreamExecutionEnvironment</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="keyword">final</span> StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();</span><br><span class="line">	env.setRestartStrategy(environment.getExecution().getRestartStrategy());</span><br><span class="line">	env.setParallelism(environment.getExecution().getParallelism());</span><br><span class="line">	env.setMaxParallelism(environment.getExecution().getMaxParallelism());</span><br><span class="line">	env.setStreamTimeCharacteristic(environment.getExecution().getTimeCharacteristic());</span><br><span class="line">	<span class="keyword">if</span> (env.getStreamTimeCharacteristic() == TimeCharacteristic.EventTime) &#123;</span><br><span class="line">		env.getConfig().setAutoWatermarkInterval(environment.getExecution().getPeriodicWatermarksInterval());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> env;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过调用 StreamExecutionEnvironment.getExecutionEnvironment() 方法，拿到StreamExecutionEnvironment 环境。</p>
+<p>同时通过lookupExecutor()拿到executor</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Executor <span class="title">lookupExecutor</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		Map&lt;String, String&gt; executorProperties,</span></span></span><br><span class="line"><span class="function"><span class="params">		StreamExecutionEnvironment executionEnvironment)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		ExecutorFactory executorFactory = ComponentFactoryService.find(ExecutorFactory<span class="class">.<span class="keyword">class</span>, <span class="title">executorProperties</span>)</span>;</span><br><span class="line">		Method createMethod = executorFactory.getClass()</span><br><span class="line">			.getMethod(<span class="string">"create"</span>, Map<span class="class">.<span class="keyword">class</span>, <span class="title">StreamExecutionEnvironment</span>.<span class="title">class</span>)</span>;</span><br><span class="line">    </span><br><span class="line">		<span class="keyword">return</span> (Executor) createMethod.invoke(</span><br><span class="line">			executorFactory,</span><br><span class="line">			executorProperties,</span><br><span class="line">			executionEnvironment);</span><br><span class="line">	&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> TableException(</span><br><span class="line">			<span class="string">"Could not instantiate the executor. Make sure a planner module is on the classpath"</span>,</span><br><span class="line">			e);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>创建 module 并且 读入 TableEnironment：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Module&gt; modules = <span class="keyword">new</span> LinkedHashMap&lt;&gt;();</span><br><span class="line">environment.getModules().forEach((name, entry) -&gt;</span><br><span class="line">		modules.put(name, createModule(entry.asMap(), classLoader))</span><br><span class="line">);</span><br><span class="line"><span class="keyword">if</span> (!modules.isEmpty()) &#123;</span><br><span class="line">	<span class="comment">// unload core module first to respect whatever users configure</span></span><br><span class="line">	tableEnv.unloadModule(CoreModuleDescriptorValidator.MODULE_TYPE_CORE);</span><br><span class="line">	modules.forEach(tableEnv::loadModule);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注册function：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">registerFunctions</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	Map&lt;String, FunctionDefinition&gt; functions = <span class="keyword">new</span> LinkedHashMap&lt;&gt;();</span><br><span class="line">	environment.getFunctions().forEach((name, entry) -&gt; &#123;</span><br><span class="line">		<span class="keyword">final</span> UserDefinedFunction function = FunctionService.createFunction(entry.getDescriptor(), classLoader, <span class="keyword">false</span>);</span><br><span class="line">		functions.put(name, function);</span><br><span class="line">	&#125;);</span><br><span class="line">	registerFunctions(functions);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注册视图 view:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">environment.getTables().forEach((name, entry) -&gt; &#123;</span><br><span class="line">			<span class="comment">// if registering a view fails at this point,</span></span><br><span class="line">			<span class="comment">// it means that it accesses tables that are not available anymore</span></span><br><span class="line">			<span class="keyword">if</span> (entry <span class="keyword">instanceof</span> ViewEntry) &#123;</span><br><span class="line">				<span class="keyword">final</span> ViewEntry viewEntry = (ViewEntry) entry;</span><br><span class="line">				registerView(viewEntry);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>设置catalog和database</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Switch to the current catalog.</span></span><br><span class="line">		Optional&lt;String&gt; catalog = environment.getExecution().getCurrentCatalog();</span><br><span class="line">		catalog.ifPresent(tableEnv::useCatalog);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Switch to the current database.</span></span><br><span class="line">		Optional&lt;String&gt; database = environment.getExecution().getCurrentDatabase();</span><br><span class="line">		database.ifPresent(tableEnv::useDatabase);</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以使用tableEnvironment进行sql编程了！</p>
+</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2020/08/05/sqlclient2/" data-id="ckdhc5faz00087srd7636gq1z" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/flink/" rel="tag">flink</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/07/12/StarCraft-Java/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">StarCraft_Java</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flink/" rel="tag">Flink</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JavaSE/" rel="tag">JavaSE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/flink/" rel="tag">flink</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/flink-table-api/" rel="tag">flink,table-api</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Flink/" style="font-size: 10px;">Flink</a> <a href="/tags/JavaSE/" style="font-size: 10px;">JavaSE</a> <a href="/tags/flink/" style="font-size: 10px;">flink</a> <a href="/tags/flink-table-api/" style="font-size: 10px;">flink,table-api</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">八月 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">七月 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">五月 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">四月 2020</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/08/05/sqlclient2/">sqlclient2</a>
+          </li>
+        
+          <li>
+            <a href="/2020/07/12/StarCraft-Java/">StarCraft_Java</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/12/SQLClient%E5%AD%A6%E4%B9%A0/">SQLClient学习</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/07/Graph%E5%AD%A6%E4%B9%A0/">Graph学习</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/07/%E5%88%9D%E6%AC%A1%E4%BD%BF%E7%94%A8/">初次使用</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 hyx<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
