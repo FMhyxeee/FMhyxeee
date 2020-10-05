@@ -16,7 +16,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://yoursite.com/2020/10/05/LearnTinyHttp/overview.jpg">
 <meta property="article:published_time" content="2020-10-04T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-10-05T15:09:19.051Z">
+<meta property="article:modified_time" content="2020-10-05T15:12:53.411Z">
 <meta property="article:author" content="hyx">
 <meta property="article:tag" content="C HTTP">
 <meta name="twitter:card" content="summary">
@@ -97,115 +97,118 @@
 <ul>
 <li><p>main() -&gt; startup() -&gt; accept_request() -&gt;[ execute_cgi() or serve_file()]</p>
 <img src="/2020/10/05/LearnTinyHttp/overview.jpg" class="">
+</li>
+<li><p><strong>main：</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>&#123;</span><br><span class="line">      <span class="keyword">int</span> server_sock = <span class="number">-1</span>;</span><br><span class="line">      u_short port = <span class="number">4000</span>;<span class="comment">//指定端口为 4000 </span></span><br><span class="line">      <span class="keyword">int</span> client_sock = <span class="number">-1</span>;</span><br><span class="line">      <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">client_name</span>;</span></span><br><span class="line">      <span class="keyword">socklen_t</span> client_name_len = <span class="keyword">sizeof</span>(client_name);</span><br><span class="line">      <span class="keyword">pthread_t</span> newthread;</span><br><span class="line">  </span><br><span class="line">      server_sock = startup(&amp;port);</span><br><span class="line">      <span class="built_in">printf</span>(<span class="string">"httpd running on port %d \n"</span>,port);</span><br><span class="line">  </span><br><span class="line">      <span class="keyword">while</span> (<span class="number">1</span>)&#123;</span><br><span class="line">          <span class="built_in">printf</span>(<span class="string">"Waiting for a connect!\n"</span>);</span><br><span class="line">          client_sock = accept(server_sock,</span><br><span class="line">                  (struct sockaddr* )&amp;client_name,</span><br><span class="line">                          &amp;client_name_len);</span><br><span class="line">          <span class="built_in">printf</span>(<span class="string">"Deal connect on %d\n"</span>,client_sock);</span><br><span class="line">          <span class="keyword">if</span> (client_sock == <span class="number">-1</span>)&#123;</span><br><span class="line">              error_die(<span class="string">"accept"</span>);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">if</span> (pthread_create(&amp;newthread , <span class="literal">NULL</span>, accept_request, &amp;client_sock) != <span class="number">0</span>)&#123;</span><br><span class="line">              perror(<span class="string">"pthread_create"</span>);</span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="built_in">close</span>(server_sock);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
 
 </li>
 </ul>
-<p><strong>main：</strong></p>
+<p>  ​    startup建立server_sock，然后等待client_sock连接，连接后，启动一个新的线程进行任务逻辑的处理。</p>
 <ul>
-<li><pre><code class="c"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span>{
-    <span class="keyword">int</span> server_sock = <span class="number">-1</span>;
-    u_short port = <span class="number">4000</span>;<span class="comment">//指定端口为 4000 </span>
-    <span class="keyword">int</span> client_sock = <span class="number">-1</span>;
-    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">client_name</span>;</span>
-    <span class="keyword">socklen_t</span> client_name_len = <span class="keyword">sizeof</span>(client_name);
-    <span class="keyword">pthread_t</span> newthread;
+<li><p><strong>startup:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">startup</span><span class="params">(u_short *port)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> httpd = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">name</span>;</span></span><br><span class="line"></span><br><span class="line">    httpd = socket(PF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (httpd == <span class="number">-1</span>)&#123;</span><br><span class="line">        error_die(<span class="string">"socket"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;name,<span class="number">0</span>,<span class="keyword">sizeof</span>(name));</span><br><span class="line">    name.sin_family = AF_INET;</span><br><span class="line">    <span class="comment">//这里这个大端小端还是没搞明白，是规定的还是？</span></span><br><span class="line">    name.sin_port = htons(*port);</span><br><span class="line">    name.sin_addr.s_addr = htonl(INADDR_ANY);</span><br><span class="line">    <span class="keyword">if</span> (bind(httpd,(struct sockaddr*) &amp;name,<span class="keyword">sizeof</span>(name)) &lt; <span class="number">0</span>)&#123;</span><br><span class="line">        error_die(<span class="string">"bind"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (*port == <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="keyword">socklen_t</span>  namelen = <span class="keyword">sizeof</span>(name);</span><br><span class="line">        <span class="keyword">if</span> (getsockname(httpd,(struct sockaddr*)&amp;name,&amp;namelen) == <span class="number">-1</span>)&#123;</span><br><span class="line">            error_die(<span class="string">"getsockname"</span>);</span><br><span class="line">            *port = ntohs(name.sin_port);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(<span class="built_in">listen</span>(httpd,<span class="number">5</span>) &lt; <span class="number">0</span>)&#123;</span><br><span class="line">        error_die(<span class="string">"listen"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> httpd;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-    server_sock = startup(&amp;port);
-    <span class="built_in">printf</span>(<span class="string">"httpd running on port %d \n"</span>,port);
+<p>socket()函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">socket</span><span class="params">(<span class="keyword">int</span> domain, <span class="keyword">int</span> type, <span class="keyword">int</span> protocol)</span></span>;</span><br></pre></td></tr></table></figure>
 
-    <span class="keyword">while</span> (<span class="number">1</span>){
-        <span class="built_in">printf</span>(<span class="string">"Waiting for a connect!\n"</span>);
-        client_sock = accept(server_sock,
-                (struct sockaddr* )&amp;client_name,
-                        &amp;client_name_len);
-        <span class="built_in">printf</span>(<span class="string">"Deal connect on %d\n"</span>,client_sock);
-        <span class="keyword">if</span> (client_sock == <span class="number">-1</span>){
-            error_die(<span class="string">"accept"</span>);
-        }
-        <span class="keyword">if</span> (pthread_create(&amp;newthread , <span class="literal">NULL</span>, accept_request, &amp;client_sock) != <span class="number">0</span>){
-            perror(<span class="string">"pthread_create"</span>);
-        }
-    }
-    <span class="built_in">close</span>(server_sock);
-    <span class="keyword">return</span> <span class="number">0</span>;
-}
-&lt;!--￼<span class="number">0</span>--&gt;
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>domain</td>
+<td>设置通信域(本地(PF_LOCAL),ipv4(AF_INET),ipv6()等)</td>
+</tr>
+<tr>
+<td>type</td>
+<td>设置套接字通信类型(TCP,双向字节流(SOCK_STREAM),UDP(SOCK_DGRAM))</td>
+</tr>
+<tr>
+<td>protocol</td>
+<td>某个协议的特定类型,既type类型中某个类型.通常只有一个类型,所以设置成0</td>
+</tr>
+</tbody></table>
+<p>struct sockaddr_in：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">　　short <span class="keyword">int</span> sin_family; <span class="comment">/*指代协议族，在socket编程中只能是AF_INET */</span></span><br><span class="line">　　<span class="keyword">unsigned</span> short <span class="keyword">int</span> sin_port; <span class="comment">/* 端口号 */</span></span><br><span class="line">　　<span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">sin_addr</span>;</span> <span class="comment">/* IP地址, in_addr这个数据结构,下面会有对in_addr的介绍*/</span></span><br><span class="line">　　<span class="keyword">unsigned</span> <span class="keyword">char</span> sin_zero[<span class="number">8</span>]; <span class="comment">/* Same size as struct sockaddr */</span></span><br><span class="line">　　&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> &#123;</span></span><br><span class="line">　　<span class="keyword">union</span> &#123;</span><br><span class="line">　　<span class="class"><span class="keyword">struct</span>&#123;</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> s_b1,s_b2, s_b3,s_b4;&#125; S_un_b;</span><br><span class="line">　　<span class="class"><span class="keyword">struct</span>&#123;</span> <span class="keyword">unsigned</span> short s_w1, s_w2;&#125; S_un_w;</span><br><span class="line">　　<span class="keyword">unsigned</span> <span class="keyword">long</span> S_addr;</span><br><span class="line">　　&#125; S_un;</span><br><span class="line">　　&#125; IN_ADDR;</span><br></pre></td></tr></table></figure>
 
-socket()函数：
+<p>socklen_t</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">在<span class="number">32</span>位下<span class="keyword">size_t</span>和<span class="keyword">int</span>长度相同,都是<span class="number">32b</span>it,</span><br><span class="line">在<span class="number">64</span>位下<span class="keyword">size_t</span>和<span class="keyword">int</span>长度不同,分别是<span class="number">32b</span>it和<span class="number">64b</span>it</span><br><span class="line">而socket中accpet函数的第三个参数必须和<span class="keyword">int</span>长度相同,所以变设置了<span class="keyword">socklen_t</span>的类型</span><br></pre></td></tr></table></figure>
 
-&lt;!--￼<span class="number">1</span>--&gt;
+<p>accept()</p>
+<p>​    提取所监听套接字的第一个链接请求,创建新的套接字,并返回文件描述符,新建立的套接字准备发送send()和接收数据recv()</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd,struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
 
-| 参数     | 描述                                                         |
-| -------- | ------------------------------------------------------------ |
-| domain   | 设置通信域(本地(PF_LOCAL),ipv4(AF_INET),ipv6()等)            |
-| type     | 设置套接字通信类型(TCP,双向字节流(SOCK_STREAM),UDP(SOCK_DGRAM)) |
-| protocol | 某个协议的特定类型,既type类型中某个类型.通常只有一个类型,所以设置成<span class="number">0</span> |
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sockfd</td>
+<td>经过绑定(bind),监听(listen)的socket套接字描述符</td>
+</tr>
+<tr>
+<td>addr</td>
+<td>客户端的地址结构体</td>
+</tr>
+<tr>
+<td>addrlen</td>
+<td>sizeof(struct sockaddr_in),客户端地址结构体的大小</td>
+</tr>
+</tbody></table>
+<p>本地和网络字节转换</p>
+<p>​    网络字节顺序NBO（Network Byte Order）,按从高到底顺序存储,(大端：低位存放在高字节)<br>主机字节顺序（HBO，Host Byte Order）（小端：低位存放在低字节）</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>htonl()</td>
+<td>“Host to Network Long int”</td>
+</tr>
+<tr>
+<td>ntohl()</td>
+<td>“Network to Host Long int”</td>
+</tr>
+<tr>
+<td>htons()</td>
+<td>“Host to Network Short int”</td>
+</tr>
+<tr>
+<td>ntohs()</td>
+<td>“Network to Host Short int”</td>
+</tr>
+</tbody></table>
+<p>bind()</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bind</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
 
-<span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span>：</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">　　short <span class="keyword">int</span> sin_family; <span class="comment">/*指代协议族，在socket编程中只能是AF_INET */</span></span><br><span class="line">　　<span class="keyword">unsigned</span> short <span class="keyword">int</span> sin_port; <span class="comment">/* 端口号 */</span></span><br><span class="line">　　<span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">sin_addr</span>;</span> <span class="comment">/* IP地址, in_addr这个数据结构,下面会有对in_addr的介绍*/</span></span><br><span class="line">　　<span class="keyword">unsigned</span> <span class="keyword">char</span> sin_zero[<span class="number">8</span>]; <span class="comment">/* Same size as struct sockaddr */</span></span><br><span class="line">　　&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> &#123;</span></span><br><span class="line">　　<span class="keyword">union</span> &#123;</span><br><span class="line">　　<span class="class"><span class="keyword">struct</span>&#123;</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> s_b1,s_b2, s_b3,s_b4;&#125; S_un_b;</span><br><span class="line">　　<span class="class"><span class="keyword">struct</span>&#123;</span> <span class="keyword">unsigned</span> short s_w1, s_w2;&#125; S_un_w;</span><br><span class="line">　　<span class="keyword">unsigned</span> <span class="keyword">long</span> S_addr;</span><br><span class="line">　　&#125; S_un;</span><br><span class="line">　　&#125; IN_ADDR;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class"><span class="title">socklen_t</span></span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">在<span class="number">32</span>位下<span class="keyword">size_t</span>和<span class="keyword">int</span>长度相同,都是<span class="number">32b</span>it,</span><br><span class="line">在<span class="number">64</span>位下<span class="keyword">size_t</span>和<span class="keyword">int</span>长度不同,分别是<span class="number">32b</span>it和<span class="number">64b</span>it</span><br><span class="line">而socket中accpet函数的第三个参数必须和<span class="keyword">int</span>长度相同,所以变设置了<span class="keyword">socklen_t</span>的类型</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class"><span class="title">accept</span>()</span>
-<span class="class"></span>
-<span class="class">​    提取所监听套接字的第一个链接请求,创建新的套接字,并返回文件描述符,新建立的套接字准备发送<span class="title">send</span>()和接收数据<span class="title">recv</span>()</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd,struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class">| 参数    | 描述                                              |</span>
-<span class="class">| ------- | ------------------------------------------------- |</span>
-<span class="class">| <span class="title">sockfd</span>  | 经过绑定(<span class="title">bind</span>),监听(<span class="title">listen</span>)的<span class="title">socket</span>套接字描述符   |</span>
-<span class="class">| <span class="title">addr</span>    | 客户端的地址结构体                                |</span>
-<span class="class">| <span class="title">addrlen</span> | <span class="title">sizeof</span>(<span class="title">struct</span> <span class="title">sockaddr_in</span>),客户端地址结构体的大小 |</span>
-<span class="class"></span>
-<span class="class">本地和网络字节转换</span>
-<span class="class"></span>
-<span class="class">​    网络字节顺序<span class="title">NBO</span>（<span class="title">Network</span> <span class="title">Byte</span> <span class="title">Order</span>）,按从高到底顺序存储,(大端：低位存放在高字节)</span>
-<span class="class">主机字节顺序（<span class="title">HBO</span>，<span class="title">Host</span> <span class="title">Byte</span> <span class="title">Order</span>）（小端：低位存放在低字节）</span>
-<span class="class"></span>
-<span class="class">| 方法    | 描述                        |</span>
-<span class="class">| ------- | --------------------------- |</span>
-<span class="class">| <span class="title">htonl</span>() | “<span class="title">Host</span> <span class="title">to</span> <span class="title">Network</span> <span class="title">Long</span> <span class="title">int</span>”  |</span>
-<span class="class">| <span class="title">ntohl</span>() | “<span class="title">Network</span> <span class="title">to</span> <span class="title">Host</span> <span class="title">Long</span> <span class="title">int</span>”  |</span>
-<span class="class">| <span class="title">htons</span>() | “<span class="title">Host</span> <span class="title">to</span> <span class="title">Network</span> <span class="title">Short</span> <span class="title">int</span>” |</span>
-<span class="class">| <span class="title">ntohs</span>() | “<span class="title">Network</span> <span class="title">to</span> <span class="title">Host</span> <span class="title">Short</span> <span class="title">int</span>” |</span>
-<span class="class"></span>
-<span class="class"><span class="title">bind</span>()</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bind</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class">​    当用<span class="title">socket</span>()函数创建套接字以后，套接字在名称空间(网络地址族)中存在，但没有任何地址给它赋值。<span class="title">bind</span>()把用***<span class="title">addr</span>***指定的地址赋值给用文件描述符代表的套接字***<span class="title">sockfd</span>***。***<span class="title">addrlen</span>***指定了以***<span class="title">addr</span>***所指向的地址结构体的字节长度。一般来说，该操作称为“给套接字命名”。</span>
-<span class="class"></span>
-<span class="class"><span class="title">bind</span>()函数并不是总是需要调用的，只有用户进程想与一个具体的地址或端口相关联的时候才需要调用这个函数。如果用户进程没有这个需要，那么程序可以依赖内核的自动的选址机制来完成自动地址选择，而不需要调用<span class="title">bind</span>()函数，同时也避免不必要的复杂度。在一般情况下，对于服务器进程问题需要调用<span class="title">bind</span>()函数，对于客户进程则不需要调用<span class="title">bind</span>()函数。</span>
-<span class="class"></span>
-<span class="class"><span class="title">listen</span>()</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">listen</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> backlog)</span></span>;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class">​    <span class="title">listen</span>函数使用主动连接套接字，使得一个进程可以接受其它进程的请求，从而成为一个服务器进程。在<span class="title">TCP</span>服务器编程中<span class="title">listen</span>函数把进程变为一个服务器，并指定相应的套接字变为被动连接。</span>
-<span class="class"></span>
-<span class="class">​    <span class="title">listen</span>函数一般在调用<span class="title">bind</span>之后-调用<span class="title">accept</span>之前调用。</span>
-<span class="class"></span>
-<span class="class">​    **<span class="title">sockfd</span>** 一个已绑定未被连接的套接字描述符</span>
-<span class="class"></span>
-<span class="class">​    **<span class="title">backlog</span>** 连接请求队列(<span class="title">queue</span> <span class="title">of</span> <span class="title">pending</span> <span class="title">connections</span>)的最大长度（一般由2到4）。用<span class="title">SOMAXCONN</span>则由系统确定。</span>
-<span class="class"></span>
-<span class="class"><span class="title">accept</span>()</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd,struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class"><span class="title">accept</span>()系统调用主要用在基于连接的套接字类型，比如<span class="title">SOCK_STREAM</span>和<span class="title">SOCK_SEQPACKET</span>。它**提取出所监听套接字的等待连接队列中第一个连接请求**，**创建一个新的套接字，并返回指向该套接字的文件描述符**。新建立的套接字不在监听状态，原来所监听的套接字也不受该系统调用的影响。</span>
-<span class="class"></span>
-<span class="class"><span class="title">pthread_create</span>()</span>
-<span class="class"></span>
-<span class="class"><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_create</span><span class="params">(<span class="keyword">pthread_t</span> *tidp,<span class="keyword">const</span> <span class="keyword">pthread_attr_t</span> *attr,<span class="keyword">void</span> *(*start_rtn)(<span class="keyword">void</span>*),<span class="keyword">void</span> *arg)</span></span>;</span><br></pre></td></tr></table></figure></span>
-<span class="class"></span>
-<span class="class">​    编译时，需要加上 -<span class="title">lpthread</span> 参数</span>
-<span class="class"></span>
-<span class="class">​    返回成功时，由<span class="title">tidp</span>指向的内存单元被设置为新创建线程的线程<span class="title">ID</span>。<span class="title">attr</span>参数用于指定各种不同的线程属性。新创建的线程从<span class="title">start_rtn</span>函数的地址开始运行，该函数只有一个万能指针参数<span class="title">arg</span>，如果需要向<span class="title">start_rtn</span>函数传递的参数不止一个，那么需要把这些参数放到一个结构中，然后把这个结构的地址作为<span class="title">arg</span>的参数传入。</span></code></pre>
+<p>​    当用socket()函数创建套接字以后，套接字在名称空间(网络地址族)中存在，但没有任何地址给它赋值。bind()把用<strong><em>addr</em></strong>指定的地址赋值给用文件描述符代表的套接字<strong><em>sockfd</em></strong>。<strong><em>addrlen</em></strong>指定了以<strong><em>addr</em></strong>所指向的地址结构体的字节长度。一般来说，该操作称为“给套接字命名”。</p>
+<p>bind()函数并不是总是需要调用的，只有用户进程想与一个具体的地址或端口相关联的时候才需要调用这个函数。如果用户进程没有这个需要，那么程序可以依赖内核的自动的选址机制来完成自动地址选择，而不需要调用bind()函数，同时也避免不必要的复杂度。在一般情况下，对于服务器进程问题需要调用bind()函数，对于客户进程则不需要调用bind()函数。</p>
+<p>listen()</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">listen</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> backlog)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    listen函数使用主动连接套接字，使得一个进程可以接受其它进程的请求，从而成为一个服务器进程。在TCP服务器编程中listen函数把进程变为一个服务器，并指定相应的套接字变为被动连接。</p>
+<p>​    listen函数一般在调用bind之后-调用accept之前调用。</p>
+<p>​    <strong>sockfd</strong> 一个已绑定未被连接的套接字描述符</p>
+<p>​    <strong>backlog</strong> 连接请求队列(queue of pending connections)的最大长度（一般由2到4）。用SOMAXCONN则由系统确定。</p>
+<p>accept()</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd,struct sockaddr *addr,<span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>accept()系统调用主要用在基于连接的套接字类型，比如SOCK_STREAM和SOCK_SEQPACKET。它<strong>提取出所监听套接字的等待连接队列中第一个连接请求</strong>，<strong>创建一个新的套接字，并返回指向该套接字的文件描述符</strong>。新建立的套接字不在监听状态，原来所监听的套接字也不受该系统调用的影响。</p>
+<p>pthread_create()</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_create</span><span class="params">(<span class="keyword">pthread_t</span> *tidp,<span class="keyword">const</span> <span class="keyword">pthread_attr_t</span> *attr,<span class="keyword">void</span> *(*start_rtn)(<span class="keyword">void</span>*),<span class="keyword">void</span> *arg)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    编译时，需要加上 -lpthread 参数</p>
+<p>​    返回成功时，由tidp指向的内存单元被设置为新创建线程的线程ID。attr参数用于指定各种不同的线程属性。新创建的线程从start_rtn函数的地址开始运行，该函数只有一个万能指针参数arg，如果需要向start_rtn函数传递的参数不止一个，那么需要把这些参数放到一个结构中，然后把这个结构的地址作为arg的参数传入。</p>
 </li>
 <li><p>accept_request()</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">accept_request</span><span class="params">(<span class="keyword">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> client = *(<span class="keyword">int</span>*) arg; <span class="comment">//拿到sock_client</span></span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">1024</span>];</span><br><span class="line">    <span class="keyword">size_t</span> numchars;</span><br><span class="line">    <span class="keyword">char</span> method[<span class="number">255</span>];</span><br><span class="line">    <span class="keyword">char</span> url[<span class="number">255</span>];</span><br><span class="line">    <span class="keyword">char</span> path[<span class="number">512</span>];</span><br><span class="line">    <span class="keyword">size_t</span> i, j;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">st</span>;</span></span><br><span class="line">    <span class="keyword">int</span> cgi = <span class="number">0</span>; <span class="comment">//如果是cgi的话，则变为1</span></span><br><span class="line">    <span class="keyword">char</span> *query_string = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="comment">//拿到http的第一条信息</span></span><br><span class="line">    numchars = get_line(client, buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    i = <span class="number">0</span>; j = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//把buf里面的内容放到method里面</span></span><br><span class="line">    <span class="keyword">while</span> (!ISpaces(buf[i]) &amp;&amp; (i &lt; <span class="keyword">sizeof</span>(method)<span class="number">-1</span>))&#123;</span><br><span class="line">        method[i] = buf[i];</span><br><span class="line">        i++; j++;</span><br><span class="line">    &#125;</span><br><span class="line">    method[i] = <span class="string">'\0'</span>; <span class="comment">//给method补一个截至符</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(method,<span class="string">"GET"</span>) &amp;&amp; strcasecmp(method,<span class="string">"POST"</span>))&#123;</span><br><span class="line">        unimplemented(client);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(method,<span class="string">"POST"</span>) == <span class="number">0</span>)&#123;</span><br><span class="line">        cgi = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (ISpaces(buf[j]) &amp;&amp; (j &lt; numchars))&#123;</span><br><span class="line">        j++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> (!ISpaces(buf[j]) &amp;&amp; (i &lt; <span class="keyword">sizeof</span>(url) - <span class="number">1</span>) &amp;&amp; (j &lt; <span class="keyword">sizeof</span>(buf)))&#123;</span><br><span class="line">        url[i] = buf[j];</span><br><span class="line">        i++; j++;</span><br><span class="line">    &#125;</span><br><span class="line">    url[i] = <span class="string">'\0'</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(method,<span class="string">"GET"</span>)== <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"GET! and URL is %s\n"</span>,url);</span><br><span class="line">        query_string = url;</span><br><span class="line">        <span class="keyword">while</span> ((*query_string != <span class="string">'?'</span>) &amp;&amp; (*query_string != <span class="string">'\0'</span>))&#123;</span><br><span class="line">            query_string++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (*query_string == <span class="string">'?'</span>)&#123;</span><br><span class="line">            cgi = <span class="number">1</span>;</span><br><span class="line">            *query_string = <span class="string">'\0'</span>;</span><br><span class="line">            query_string++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//把../htdocs/xxx写入path内</span></span><br><span class="line">    <span class="built_in">sprintf</span>(path,<span class="string">"../htdocs%s"</span>,url);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//如果直接使用ip地址访问的话，会返回xxx.xxx.xxx.xxx/index.html</span></span><br><span class="line">    <span class="keyword">if</span> (path[<span class="built_in">strlen</span>(path)<span class="number">-1</span>] == <span class="string">'/'</span>)&#123;</span><br><span class="line">        <span class="built_in">strcat</span>(path,<span class="string">"index.html"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//判断path目录的资源是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (stat(path,&amp;st) == <span class="number">-1</span>)&#123;</span><br><span class="line">        <span class="keyword">while</span> ((numchars &gt; <span class="number">0</span>) &amp;&amp; <span class="built_in">strcmp</span>(<span class="string">"\n"</span>,buf))&#123;</span><br><span class="line">            numchars = get_line(client,buf,<span class="keyword">sizeof</span>(buf));</span><br><span class="line">        &#125;</span><br><span class="line">        not_found(client);</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> ((st.st_mode &amp; S_IFMT) == S_IFDIR)&#123;</span><br><span class="line">            <span class="built_in">strcat</span>(path, <span class="string">"/index.html"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> ((st.st_mode &amp; S_IXUSR) ||  (st.st_mode &amp; S_IXGRP) || (st.st_mode &amp; S_IXOTH))&#123;</span><br><span class="line">            cgi = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!cgi)&#123;</span><br><span class="line">            serve_file(client, path);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            execute_cgi(client,path,method,query_string);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">close</span>(client);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -273,7 +276,7 @@ socket()函数：
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2020/10/05/LearnTinyHttp/" data-id="ckfwo775j000diwrdapb12hwb" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2020/10/05/LearnTinyHttp/" data-id="ckfwobq2n00058srdfy2v1w7a" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/C-HTTP/" rel="tag">C HTTP</a></li></ul>
